@@ -16,12 +16,16 @@
 
 package com.github.ksoichiro.android.observablescrollview.samples;
 
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
+import android.text.Html;
+import android.text.util.Linkify;
+import android.util.TypedValue;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 public class AboutActivity extends ActionBarActivity {
@@ -35,7 +39,10 @@ public class AboutActivity extends ActionBarActivity {
             ab.setDisplayHomeAsUpEnabled(true);
             ab.setHomeButtonEnabled(true);
         }
-        ((TextView) findViewById(R.id.version_name)).setText(getVersionName());
+        ((TextView) findViewById(R.id.app_version)).setText(getString(R.string.msg_app_version, BuildConfig.VERSION_NAME, BuildConfig.GIT_HASH));
+        ((TextView) findViewById(R.id.lib_version)).setText(getString(R.string.msg_lib_version, BuildConfig.LIB_VERSION));
+
+        initLicenses();
     }
 
     @Override
@@ -47,14 +54,56 @@ public class AboutActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public String getVersionName() {
-        try {
-            final PackageInfo info = getPackageManager().getPackageInfo(
-                    getPackageName(), PackageManager.GET_META_DATA);
-            return info.versionName;
-        } catch (PackageManager.NameNotFoundException e) {
-            return "";
+    private void initLicenses() {
+        LayoutInflater inflater = LayoutInflater.from(this);
+        LinearLayout content = (LinearLayout) findViewById(R.id.licenses);
+
+        String[] softwareList = getResources().getStringArray(R.array.software_list);
+        String[] licenseList = getResources().getStringArray(R.array.license_list);
+        content.addView(createItemsText(softwareList));
+        for (int i = 0; i < softwareList.length; i++) {
+            content.addView(createDivider(inflater));
+            content.addView(createHeader(softwareList[i]));
+            content.addView(createHtmlText(licenseList[i]));
         }
     }
 
+    private TextView createHeader(final String name) {
+        String s = "<big><b>" + name + "</b></big>";
+        return createHtmlText(s, 8);
+    }
+
+    private TextView createItemsText(final String... names) {
+        StringBuilder s = new StringBuilder();
+        for (String name : names) {
+            if (s.length() > 0) {
+                s.append("<br>");
+            }
+            s.append("- ");
+            s.append(name);
+        }
+        return createHtmlText(s.toString(), 8);
+    }
+
+    private TextView createHtmlText(final String s) {
+        return createHtmlText(s, 8);
+    }
+
+    private TextView createHtmlText(final String s, final int margin) {
+        TextView text = new TextView(this);
+        text.setAutoLinkMask(Linkify.WEB_URLS | Linkify.EMAIL_ADDRESSES);
+        text.setText(Html.fromHtml(s));
+        LinearLayout.LayoutParams layoutParams =
+                new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT);
+        int marginPx = (0 < margin) ? (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, margin,
+                getResources().getDisplayMetrics()) : 0;
+        layoutParams.setMargins(0, marginPx, 0, marginPx);
+        text.setLayoutParams(layoutParams);
+        return text;
+    }
+
+    private View createDivider(final LayoutInflater inflater) {
+        return inflater.inflate(R.layout.divider, null);
+    }
 }
